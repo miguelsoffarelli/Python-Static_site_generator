@@ -1,3 +1,5 @@
+import re
+
 from textnode import TextType, TextNode
 from htmlnode import HTMLNode, LeafNode, ParentNode
 
@@ -54,4 +56,90 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             result.extend(remaining_processed)
 
     return result
+
+
+def extract_markdown_images(text):
+    matches = re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+    return matches
+
+
+def extract_markdown_links(text):
+    matches = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+    return matches
+
+
+def split_nodes_image(old_nodes):
+    result = []
+    
+    for node in old_nodes:
+        
+        if not node.text:
+            continue
+            
+        images = extract_markdown_images(node.text)
+        
+        if not images:
+            result.append(node)
+            continue
+
+        remaining_text = node.text
+        
+        for image in images:
+            split_text = remaining_text.split(f"![{image[0]}]({image[1]})", 1)
+            before = split_text[0]
+            
+            if before:
+                result.append(TextNode(before, node.text_type))
+            
+            result.append(TextNode(image[0], TextType.IMAGE, image[1]))
+
+            if len(split_text) > 1:
+                remaining_text = split_text[1]
+            else:
+                remaining_text = ""
+
+        if remaining_text:
+            result.append(TextNode(remaining_text, node.text_type))
+
+    return result
+
+
+def split_nodes_link(old_nodes):
+    result = []
+    
+    for node in old_nodes:
+        
+        if not node.text:
+            continue
+            
+        links = extract_markdown_links(node.text)
+        
+        if not links:
+            result.append(node)
+            continue
+
+        remaining_text = node.text
+        
+        for link in links:
+            split_text = remaining_text.split(f"[{link[0]}]({link[1]})", 1)
+            before = split_text[0]
+            
+            if before:
+                result.append(TextNode(before, node.text_type))
+            
+            result.append(TextNode(link[0], TextType.LINK, link[1]))
+
+            if len(split_text) > 1:
+                remaining_text = split_text[1]
+            else:
+                remaining_text = ""
+
+        if remaining_text:
+            result.append(TextNode(remaining_text, node.text_type))
+
+    return result
+
+        
+        
+
             
