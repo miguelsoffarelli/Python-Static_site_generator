@@ -201,12 +201,10 @@ class TestParentNode(unittest.TestCase):
             ParentNode("div")
 
     def test_extremely_deep_nesting(self):
-        # Create a deeply nested structure to test recursion limits
         leaf = LeafNode("span", "Deep")
         node = leaf
         for i in range(20):  # 20 levels deep
             node = ParentNode("div", [node])
-        # If this doesn't raise RecursionError, the implementation handles deep nesting well
         html = node.to_html()
         self.assertIn("<span>Deep</span>", html)
         self.assertEqual(html.count("<div>"), 20)
@@ -222,3 +220,7 @@ class TestParentNode(unittest.TestCase):
     def test_parent_node_inherits_html_node(self):
         # Test that ParentNode is a subclass of HTMLNode
         self.assertTrue(issubclass(ParentNode, HTMLNode))
+
+    
+if __name__ == "__main__":
+    unittest.main()
