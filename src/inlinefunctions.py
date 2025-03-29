@@ -141,7 +141,7 @@ def split_nodes_link(old_nodes):
 
 
 def text_to_textnodes(text):
-    # Unreadable one-line solution to remind myself the importance of readability ☠️:
+    # Unreadable one-line nested solution to remind myself the importance of readability ☠️:
     # return split_nodes_delimiter(split_nodes_delimiter(split_nodes_delimiter(split_nodes_link(split_nodes_image([TextNode(text, TextType.NORMAL)])), "`", TextType.CODE), "_", TextType.ITALIC), "**", TextType.BOLD)
     
     images = split_nodes_image([TextNode(text, TextType.NORMAL)])
@@ -152,27 +152,3 @@ def text_to_textnodes(text):
     return bold
     # Note: Nested nodes (for example "This is a text that has **bold text with _italic text_ nested inside**") 
     # will not be handled in this project (for the moment).
-        
-        
-
-def markdown_to_blocks(markdown):
-    # Strip the raw markdown from trailing whitespaces/empty lines
-    clean_markdown = markdown.strip()
-    # Used regex to make sure the text is split into blocks when there's an empty line in between,
-    # independently if the empty line is a new line or one or many whitespaces.
-    # Using .split() would fail in cases where the empty space between blocks wasn't exclusively new lines (\n).
-    blocks = re.split(r'\n\s*\n', clean_markdown)
-    result = []
-    
-    for block in blocks:
-        # Strip each block from trailing whitespaces
-        clean_block = block.strip()
-        # Split each block into lines to handle multiple line blocks
-        lines = clean_block.split('\n')
-        # Strip each line from trailing whitespaces
-        processed_block = '\n'.join(line.strip() for line in lines)
-        # Check if the block is not empty to filter excess of new lines
-        if processed_block:
-            result.append(processed_block)
-    
-    return result

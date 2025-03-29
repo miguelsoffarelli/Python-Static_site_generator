@@ -1,6 +1,6 @@
 import unittest
 
-from functions import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes,markdown_to_blocks
+from inlinefunctions import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
 from textnode import TextNode, TextType
 
 
@@ -589,63 +589,6 @@ class TestTextToTextNodes(unittest.TestCase):
             no_url_parenthesis,
             [TextNode("![this image](www.doesnthavetheclosingparenthesis.com", TextType.NORMAL)],
         )
-
-
-class TestMarkdownToBlocks(unittest.TestCase):
-    def test_markdown_to_blocks(self):
-        md = """
-    This is **bolded** paragraph
-
-    This is another paragraph with _italic_ text and `code` here
-    This is the same paragraph on a new line
-
-    - This is a list
-    - with items
-    """
-        blocks = markdown_to_blocks(md)
-        self.assertEqual(
-            blocks,
-            [
-                "This is **bolded** paragraph",
-                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
-                "- This is a list\n- with items",
-            ],
-        )
-
-    def test_multiple_newlines(self):
-        md = """
-    This is a **paragraph**
-
-
-    This is another paragraph that's more than one line below   
-       
-    This is another paragraph and the line below contains whitespaces  
-    And this is another line of the same paragraph
-    """
-        blocks = markdown_to_blocks(md)
-        self.assertEqual(
-            blocks,
-            [
-                "This is a **paragraph**",
-                "This is another paragraph that's more than one line below",
-                "This is another paragraph and the line below contains whitespaces\nAnd this is another line of the same paragraph"
-            ]
-        )
-        
-    def test_empty_input(self):
-        md = ""
-        blocks = markdown_to_blocks(md)
-        self.assertEqual(blocks, [])
-
-    def test_single_block(self):
-        md = "Just one block with no newlines"
-        blocks = markdown_to_blocks(md)
-        self.assertEqual(blocks, ["Just one block with no newlines"])
-
-    def test_only_whitespace(self):
-        md = "   \n   \n   \n   "
-        blocks = markdown_to_blocks(md)
-        self.assertEqual(blocks, [])
 
 
 
