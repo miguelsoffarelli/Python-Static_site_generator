@@ -1,7 +1,7 @@
 import re
 
 from textnode import TextType, TextNode
-from htmlnode import HTMLNode, LeafNode, ParentNode
+from htmlnode import LeafNode
 
 
 def text_node_to_html_node(text_node):
@@ -38,7 +38,7 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
         closer_index = node.text.find(delimiter, opener_index + len(delimiter))
 
         if closer_index == -1:
-            raise Exception(f"Closer delimiter {delimiter} not found")
+            raise Exception(f"Closing delimiter {delimiter} not found")
         
         before = node.text[:opener_index]
         content = node.text[opener_index + len(delimiter):closer_index]
@@ -139,7 +139,40 @@ def split_nodes_link(old_nodes):
 
     return result
 
+
+def text_to_textnodes(text):
+    # Unreadable one-line solution to remind myself the importance of readability ☠️:
+    # return split_nodes_delimiter(split_nodes_delimiter(split_nodes_delimiter(split_nodes_link(split_nodes_image([TextNode(text, TextType.NORMAL)])), "`", TextType.CODE), "_", TextType.ITALIC), "**", TextType.BOLD)
+    
+    images = split_nodes_image([TextNode(text, TextType.NORMAL)])
+    links = split_nodes_link(images)
+    code = split_nodes_delimiter(links, "`", TextType.CODE)
+    italic = split_nodes_delimiter(code, "_", TextType.ITALIC)
+    bold = split_nodes_delimiter(italic, "**", TextType.BOLD)
+    return bold
+    # Note: Nested nodes (for example "This is a text that has **bold text with _italic text_ nested inside**") 
+    # will not be handled in this project (for the moment).
         
         
 
-            
+def markdown_to_blocks(markdown):
+    # Strip the raw markdown from trailing whitespaces/empty lines
+    clean_markdown = markdown.strip()
+    # Used regex to make sure the text is split into blocks when there's an empty line in between,
+    # independently if the empty line is a new line or one or many whitespaces.
+    # Using .split() would fail in cases where the empty space between blocks wasn't exclusively new lines (\n).
+    blocks = re.split(r'\n\s*\n', clean_markdown)
+    result = []
+    
+    for block in blocks:
+        # Strip each block from trailing whitespaces
+        clean_block = block.strip()
+        # Split each block into lines to handle multiple line blocks
+        lines = clean_block.split('\n')
+        # Strip each line from trailing whitespaces
+        processed_block = '\n'.join(line.strip() for line in lines)
+        # Check if the block is not empty to filter excess of new lines
+        if processed_block:
+            result.append(processed_block)
+    
+    return result

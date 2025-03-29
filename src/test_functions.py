@@ -1,8 +1,8 @@
 import unittest
 
-from functions import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link
+from functions import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes,markdown_to_blocks
 from textnode import TextNode, TextType
-from htmlnode import HTMLNode, LeafNode, ParentNode
+
 
 class TestTextToHTML(unittest.TestCase):
     def test_text(self):
@@ -509,6 +509,143 @@ class TestSplitNodesLink(unittest.TestCase):
         )
 
 
+class TestTextToTextNodes(unittest.TestCase):
+    def test_all_node_types(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        result = text_to_textnodes(text)
+        self.assertEqual(
+            [
+                TextNode("This is ", TextType.NORMAL),
+                TextNode("text", TextType.BOLD),
+                TextNode(" with an ", TextType.NORMAL),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" word and a ", TextType.NORMAL),
+                TextNode("code block", TextType.CODE),
+                TextNode(" and an ", TextType.NORMAL),
+                TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+                TextNode(" and a ", TextType.NORMAL),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+            ],
+        result)
+
+    def test_plain_text(self):
+        text = "This is just plain text without bold, italic, code, links or images"
+        result = text_to_textnodes(text)
+        self.assertEqual([TextNode("This is just plain text without bold, italic, code, links or images", TextType.NORMAL)], result)
+
+    def test_lone_node_type(self):
+        bold = "**This is fully bold text**"
+        italic = "_This is all italic text_"
+        code = "`This is only code text`"
+        link = "[this is only a link](www.google.com)"
+        image = "![image only](https://i.imgur.com/fJRm4Vk.jpeg)"
+        self.assertEqual([TextNode("This is fully bold text", TextType.BOLD)], text_to_textnodes(bold))
+        self.assertEqual([TextNode("This is all italic text", TextType.ITALIC)], text_to_textnodes(italic))
+        self.assertEqual([TextNode("This is only code text", TextType.CODE)], text_to_textnodes(code))
+        self.assertEqual([TextNode("this is only a link", TextType.LINK, "www.google.com")], text_to_textnodes(link))
+        self.assertEqual([TextNode("image only", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg")], text_to_textnodes(image))
+
+    def test_boundaries(self):
+        bold = "**Bold text** in thee beggingin... in thee... inni thi binningee... in... in the beninging..."
+        link = "This text ends with [a link](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
+        result_bold = text_to_textnodes(bold)
+        result_link = text_to_textnodes(link)
+        self.assertEqual([
+            TextNode("Bold text", TextType.BOLD),
+            TextNode(" in thee beggingin... in thee... inni thi binningee... in... in the beninging...", TextType.NORMAL)
+            ],
+            result_bold)
+        self.assertEqual([
+            TextNode("This text ends with ", TextType.NORMAL),
+            TextNode("a link", TextType.LINK, "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        ],
+        result_link)
+
+    def test_empty_text(self):
+        text = ""
+        result = text_to_textnodes(text)
+        self.assertEqual([], result)
+
+    def test_empty_delimiters(self):
+        text = "**** _ _"
+        result = text_to_textnodes(text)
+        self.assertEqual([TextNode("", TextType.BOLD), TextNode(" ", TextType.NORMAL), TextNode(" ", TextType.ITALIC)], result)
+
+    def test_wrong_delimiters(self):
+        text1 = "**I forgot to close the delimiter"
+        text2 = "I forgot to open the delimiter_"
+        text3 = "![this image](www.doesnthavetheclosingparenthesis.com"
+
+        with self.assertRaises(Exception) as context1:
+            text_to_textnodes(text1)
+        self.assertEqual(str(context1.exception), "Closing delimiter ** not found")
+
+        with self.assertRaises(Exception) as context2:
+            text_to_textnodes(text2)
+        self.assertEqual(str(context2.exception), "Closing delimiter _ not found")
+
+        no_url_parenthesis = text_to_textnodes(text3)
+        self.assertEqual(
+            no_url_parenthesis,
+            [TextNode("![this image](www.doesnthavetheclosingparenthesis.com", TextType.NORMAL)],
+        )
+
+
+class TestMarkdownToBlocks(unittest.TestCase):
+    def test_markdown_to_blocks(self):
+        md = """
+    This is **bolded** paragraph
+
+    This is another paragraph with _italic_ text and `code` here
+    This is the same paragraph on a new line
+
+    - This is a list
+    - with items
+    """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_multiple_newlines(self):
+        md = """
+    This is a **paragraph**
+
+
+    This is another paragraph that's more than one line below   
+       
+    This is another paragraph and the line below contains whitespaces  
+    And this is another line of the same paragraph
+    """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is a **paragraph**",
+                "This is another paragraph that's more than one line below",
+                "This is another paragraph and the line below contains whitespaces\nAnd this is another line of the same paragraph"
+            ]
+        )
+        
+    def test_empty_input(self):
+        md = ""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, [])
+
+    def test_single_block(self):
+        md = "Just one block with no newlines"
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, ["Just one block with no newlines"])
+
+    def test_only_whitespace(self):
+        md = "   \n   \n   \n   "
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, [])
 
 
 
