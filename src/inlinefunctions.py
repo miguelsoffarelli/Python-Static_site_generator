@@ -141,7 +141,7 @@ def split_nodes_link(old_nodes):
 
 
 def text_to_textnodes(text):
-    # Unreadable one-line nested solution to remind myself the importance of readability ☠️:
+    # Unreadable one-line nested solution to remind myself the importance of readability:
     # return split_nodes_delimiter(split_nodes_delimiter(split_nodes_delimiter(split_nodes_link(split_nodes_image([TextNode(text, TextType.NORMAL)])), "`", TextType.CODE), "_", TextType.ITALIC), "**", TextType.BOLD)
     
     images = split_nodes_image([TextNode(text, TextType.NORMAL)])

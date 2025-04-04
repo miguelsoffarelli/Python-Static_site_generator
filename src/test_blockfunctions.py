@@ -1,6 +1,6 @@
 import unittest
 
-from blockfunctions import markdown_to_blocks, BlockType, block_to_block_type
+from blockfunctions import markdown_to_blocks, BlockType, block_to_block_type, markdown_to_html_node
 
 class TestMarkdownToBlocks(unittest.TestCase):
     def test_markdown_to_blocks(self):
@@ -156,3 +156,169 @@ And this too.
 ## This heading block has empty lines before it's markeres"""
         self.assertEqual(BlockType.HEADING, block_to_block_type(block1))
         self.assertEqual(BlockType.HEADING, block_to_block_type(block2))
+
+
+class TestMarkdownToHTMLNode(unittest.TestCase):
+    def test_paragraphs(self):
+        md = """
+    This is **bolded** paragraph
+    text in a p
+    tag here
+
+    This is another paragraph with _italic_ text and `code` here
+
+    """
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is <b>bolded</b> paragraph text in a p tag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>",
+        )
+
+    def test_codeblock(self):
+        md = """
+    ```This is text that _should_ remain
+    the **same** even with inline stuff
+    ```
+    """
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
+        )
+
+    def test_headings(self):
+        md = """
+    # Heading 1
+
+    ## Heading 2
+
+    ### Heading 3 with **bold**
+
+    #### Heading 4
+
+    ##### Heading 5
+
+    ###### Heading 6
+
+    Not a heading # with hash in the middle
+    """
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Heading 1</h1><h2>Heading 2</h2><h3>Heading 3 with <b>bold</b></h3><h4>Heading 4</h4><h5>Heading 5</h5><h6>Heading 6</h6><p>Not a heading # with hash in the middle</p></div>",
+        )
+
+    def test_lists(self):
+        md = """
+    - Item 1
+    - Item 2
+    - Item 3
+
+    1. First
+    2. Second
+    3. Third
+    """
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul><ol><li>First</li><li>Second</li><li>Third</li></ol></div>",
+        )
+
+    def test_blockquote(self):
+        md = """
+    > This is a quote
+    > with multiple lines
+    > and **bold** text
+    """
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><blockquote>This is a quote with multiple lines and <b>bold</b> text</blockquote></div>",
+        )
+
+    def test_mixed_content(self):
+        md = """
+    # Main Title
+
+    This is a paragraph with **bold** and _italic_ text.
+
+    > Important quote here
+
+    - List item 1
+    - List item 2 with `code`
+    """
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Main Title</h1><p>This is a paragraph with <b>bold</b> and <i>italic</i> text.</p><blockquote>Important quote here</blockquote><ul><li>List item 1</li><li>List item 2 with <code>code</code></li></ul></div>",
+        )
+
+    def test_complex_code_block(self):
+        md = """
+    Here's a sample code:
+
+    ```def hello_world():
+        print("Hello, **not bold**!")
+        # Comments _not italic_
+        return None```
+
+
+    End of example
+    """
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>Here's a sample code:</p><pre><code>def hello_world():\nprint(\"Hello, **not bold**!\")\n# Comments _not italic_\nreturn None</code></pre><p>End of example</p></div>",
+        )
+
+    def test_empty_lines(self):
+        md = """
+
+    # Title with empty line above
+
+
+    Paragraph with empty lines around
+
+    """
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Title with empty line above</h1><p>Paragraph with empty lines around</p></div>",
+        )
+
+    def test_emtpy_block(self):
+        md = ""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div></div>")
+
+    def test_whitespace_block(self):
+        md = " "
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div></div>")
+
+    def test_only_newlines_block(self):
+        md = """
+
+
+
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(html, "<div></div>")
+
+
+if __name__ == "__main__":
+    unittest.main()

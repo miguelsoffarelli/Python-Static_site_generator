@@ -1,5 +1,8 @@
 import re
 from enum import Enum
+from textnode import TextNode, TextType
+from htmlnode import HTMLNode, LeafNode, ParentNode
+from inlinefunctions import text_to_textnodes, text_node_to_html_node
 
 def markdown_to_blocks(markdown):
     # Strip the raw markdown from trailing whitespaces/empty lines
@@ -83,7 +86,116 @@ def block_to_block_type(block):
     return BlockType.PARAGRAPH
 
 
-        
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
+    parent_node = ParentNode("div", [])
     
+    for block in blocks:
+        block_type = block_to_block_type(block)
+        node = block_to_html_node(block, block_type)
+        parent_node.children.append(node)
+
+    return parent_node
+
+
+def block_to_html_node(block, block_type):
+    match block_type:
+        case BlockType.PARAGRAPH:
+            return paragraph_to_html_node(block)
+        case BlockType.HEADING:
+            return heading_to_html_node(block)
+        case BlockType.CODE:
+            return code_to_html_node(block)
+        case BlockType.QUOTE:
+            return quote_to_html_node(block)
+        case BlockType.UNORDERED_LIST:
+            return ul_to_html_node(block)
+        case BlockType.ORDERED_LIST:
+            return ol_to_html_node(block)
     
+def paragraph_to_html_node(block):
+    text = block.replace("\n", " ")
+    paragraph_node = ParentNode("p", [])
+    children = text_to_children(text)
+    paragraph_node.children = children
+    
+    return paragraph_node
+
+def heading_to_html_node(block):
+    header_level = 0
+    for char in block:
+        # We can safely assume there won't be more than 6 "#"s and the syntax will be correct,
+        # otherwise block_type wouldn't be "heading" and this function won't be called.
+        if char == "#":
+            header_level += 1
+        else:
+            break
+    
+    content = block[header_level + 1:].strip()
+    heading_node = ParentNode(f"h{header_level}", [])
+    children = text_to_children(content)
+    heading_node.children = children
+    
+    return heading_node
+
+def code_to_html_node(block):
+    content = block.strip()[3:-3]
+    text_node = TextNode(content, TextType.CODE)
+    code_node = text_node_to_html_node(text_node)
+    parent_node = ParentNode("pre", [code_node])
+    
+    return parent_node
+
+def quote_to_html_node(block):
+    lines = block.split("\n")
+    # Process each line to remove '>' and join them with spaces
+    processed_text = ""
+    for line in lines:
+        line = line.strip()
+        if line.startswith(">"):
+            # Remove the '>' and any space after it
+            line = line[1:].lstrip()
+        processed_text += line + " "
+    # Create the blockquote node with children from the processed text
+    children = text_to_children(processed_text.strip())
+    
+    return ParentNode("blockquote", children)
+
+
+def ul_to_html_node(block):
+    items = block.split("\n")
+    li_nodes = []
+    for item in items:
+        if not item.strip():
+            continue
+        content = item.lstrip("- ").strip()
+        children = text_to_children(content)
+        li_node = ParentNode("li", children)
+        li_nodes.append(li_node)
+    ul_node = ParentNode("ul", li_nodes)
+    return ul_node
+
+def ol_to_html_node(block):
+    items = block.split("\n")
+    li_nodes = []
+    for item in items:
+        if not item.strip():
+            continue
+        content = item.split(".", 1)[1].strip()
+        children = text_to_children(content)
+        li_node = ParentNode("li", children)
+        li_nodes.append(li_node)
+    ol_node = ParentNode("ol", li_nodes)
+    return ol_node
+
+def text_to_children(text):
+    text_nodes = text_to_textnodes(text)
+    html_nodes = []
+    for node in text_nodes:
+        html_node = text_node_to_html_node(node)
+        html_nodes.append(html_node)
+    return html_nodes
+    
+
+
             
