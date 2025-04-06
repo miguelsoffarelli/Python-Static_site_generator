@@ -196,6 +196,28 @@ def text_to_children(text):
         html_nodes.append(html_node)
     return html_nodes
     
+def extract_title(markdown):
+    blocks = markdown_to_blocks(markdown)
+    
+    for block in blocks:
+        if block_to_block_type(block) == BlockType.HEADING:
+            # Split the heading block into lines to extract the title line only and not the whole block.
+            lines = block.split("\n")
+            for line in lines:
+                if line.strip().startswith("# "):
+                    # Split the line into text nodes for cases where the title includes
+                    # inner nodes (for example: "# This is a title with **bold** text inside."),
+                    # which will be useful to use it for the html title tag (In which case I assume the intention
+                    # would be it's content to be "This is a title with bold text inside." instead of "This is a
+                    # title with **bold** text inside.").
+                    nodes = text_to_textnodes(line.strip()[2:])
+                    title = ""
+                    # And then join only the text value of each node into the final result.
+                    for node in nodes:
+                        title += node.text
 
+                    return title
+    
+    raise Exception("No title found")
 
             

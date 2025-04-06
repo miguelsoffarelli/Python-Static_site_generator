@@ -1,6 +1,6 @@
 import unittest
 
-from blockfunctions import markdown_to_blocks, BlockType, block_to_block_type, markdown_to_html_node
+from blockfunctions import markdown_to_blocks, BlockType, block_to_block_type, markdown_to_html_node, extract_title
 
 class TestMarkdownToBlocks(unittest.TestCase):
     def test_markdown_to_blocks(self):
@@ -318,6 +318,41 @@ class TestMarkdownToHTMLNode(unittest.TestCase):
         node = markdown_to_html_node(md)
         html = node.to_html()
         self.assertEqual(html, "<div></div>")
+
+
+class TestExtractTitle(unittest.TestCase):
+    def test_extract_title(self):
+        md = """# This is markdown with a valid title.
+        
+        And this is just a paragraph."""
+
+        self.assertEqual(extract_title(md), "This is markdown with a valid title.")
+
+    def test_multiple_headings(self):
+        md = """# This is a valid title heading.
+        ### This is also a valid heading but not a title.
+        ##### This is another not-title-heading."""
+
+        self.assertEqual(extract_title(md), "This is a valid title heading.")
+
+    def test_invalid_heading(self):
+        md = "#This is an invalid header because it's missing the space after the '#'"
+        with self.assertRaises(Exception):
+            extract_title(md)
+
+    def test_empty_md(self):
+        md = ""
+        with self.assertRaises(Exception):
+            extract_title(md)
+
+    def test_lower_level_header(self):
+        md = "## This is a valid header but not a title"
+        with self.assertRaises(Exception):
+            extract_title(md)
+
+    def test_title_with_nested_nodes(self):
+        md = "# This is a valid title with **bold**, _italics_ and ```code``` inside."
+        self.assertEqual(extract_title(md), "This is a valid title with bold, italics and code inside.")
 
 
 if __name__ == "__main__":
