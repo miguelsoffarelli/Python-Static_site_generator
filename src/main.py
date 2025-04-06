@@ -3,6 +3,7 @@ from htmlnode import *
 from blockfunctions import markdown_to_html_node, extract_title
 import os
 import shutil
+import sys
 
 
 def copy_static(src, destination):
@@ -22,7 +23,7 @@ def copy_static(src, destination):
             print(f"Creating directory: {dest_path}")
             copy_static(src_path, dest_path)
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
     try:
@@ -34,7 +35,7 @@ def generate_page(from_path, template_path, dest_path):
 
         html_content = markdown_to_html_node(md_content).to_html()
         title = extract_title(md_content)
-        result = template_content.replace("{{ Title }}", title).replace("{{ Content }}", html_content)
+        result = template_content.replace("{{ Title }}", title).replace("{{ Content }}", html_content).replace('href="/', f'href="{basepath}').replace('src="/', f'src="{basepath}')
 
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
@@ -53,7 +54,7 @@ def generate_page(from_path, template_path, dest_path):
         print(f"An unexpected error occurred: {e}")
         raise
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     content_dir = os.listdir(dir_path_content)
 
     for item in content_dir:
@@ -65,21 +66,26 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
             
             os.makedirs(os.path.dirname(item_dest_path), exist_ok=True)
             
-            generate_page(item_content_path, template_path, item_dest_path)
+            generate_page(item_content_path, template_path, item_dest_path, basepath)
         elif os.path.isdir(item_content_path):
             new_dest_dir = os.path.join(dest_dir_path, item)
             os.makedirs(new_dest_dir, exist_ok=True)
             
-            generate_pages_recursive(item_content_path, template_path, new_dest_dir)
+            generate_pages_recursive(item_content_path, template_path, new_dest_dir, basepath)
 
 
 
 
 def main():
+    basepath = "/"
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
     static_dir = "static"
-    public_dir = "public"
-    copy_static(static_dir, public_dir)
+    dest_dir = "docs"
+    content_dir = "content"
+    template = "template.html"
+    copy_static(static_dir, dest_dir)
     print("Static files copied successfully!")
-    generate_pages_recursive("content", "template.html", "public")
+    generate_pages_recursive(content_dir, template, dest_dir, basepath)
 
 main()
